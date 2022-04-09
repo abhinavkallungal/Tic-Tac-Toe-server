@@ -5,7 +5,6 @@ import app from "../app";
 
 export default {
   forJoining: (name: string, socket: any) => {
-      console.log('forJoining',name);
       
     if (helpers.validateName(name)) {
       db.users[socket.id] = { name: name };
@@ -80,11 +79,13 @@ export default {
   
  play:(socket:any, position:number, roomid:string)=> {
 
-    let room = db.play.filter((room) => room.id == roomid)
+    
 
-    let playerIndex = room[0].players.findIndex((playerid: any) => playerid == socket.id)
+    let room :any = db.play.filter((room) => room.id == roomid)
 
-    let player
+    let playerIndex  :number = room[0].players.findIndex((playerid: any) => playerid == socket.id)
+
+    let player:string
 
     if (playerIndex === 0) {
         player = 'firstPlayer'
@@ -100,7 +101,6 @@ export default {
        helpers.markBoard(position, player, room[0]);
         helpers.printBoard(roomid, room[0],socket);
         if (helpers.checkWin(player, room[0]) === true) {
-            console.log('Winner Winner!');
 
             app.io.to(socket.id).emit('successMessage', 'Winner Winner!')
             app.io.to(room[0].id).emit('successMessage', ` ${db.users[socket.id].name} Winner this game`)
@@ -109,7 +109,6 @@ export default {
         }
         if (helpers.checkTie(room[0]) === true) {
             app.io.to(room[0].id).emit('warningMessage', 'Tie Game')
-            console.log('Tie Game');
             return;
         }
 
@@ -120,7 +119,6 @@ export default {
         }
 
     } else {
-        console.log('');
 
 
 
@@ -132,11 +130,20 @@ export default {
 },
     spectat:(socket:any,roomid:string,)=>{
 
-        app.io.to(roomid).emit('successMessage','\n'+"==== some one spectat Your Game ===="+'\n' )
-        
-        app.io.to(socket.id).emit('successMessage','\n'+"==== Start To Spectat the Game ===="+'\n' )
+        if(helpers.validateRoomIdForSpectat(roomid)){
 
-        socket.join(roomid) 
+            
+            app.io.to(roomid).emit('successMessage','\n'+"==== some one spectat Your Game ===="+'\n' )
+            
+            app.io.to(socket.id).emit('successMessage','\n'+"==== Start To Spectat the Game ===="+'\n' )
+            
+            socket.join(roomid) 
+        }else{
+            app.io.to(socket.id).emit('dangerMessage','\n'+"Invalied Id"+'\n' )
+
+            helpers.sendOptions(socket.id)
+
+        }
         
 
     },
@@ -146,29 +153,29 @@ export default {
 
         let user:any= db.users[socket.id];
 
-        if(!user.play) return  delete db.users[socket.id];
+        if(!user?.play) return  delete db.users[socket.id];
 
         let roomid = user.play
 
         
 
-        let room :any= db.play.find((item)=> item.id == roomid)
-
         
+        if(roomid){
 
+            let room :any= db.play.find((item)=> item.id == roomid)
 
-        app.io.to(roomid).emit("warningMessage","your oponent was left start new game")
-
-        helpers.sendOptions(roomid)
-
-        if(room.players.length === 1 || room.players.length === 2) {
-              db.play = db.play.filter((item)=> item.id !== roomid)
+            app.io.to(roomid).emit("warningMessage","your oponent was left start new game")
+            
+            helpers.sendOptions(roomid)
+            
+            if(room.players.length === 1 || room.players.length === 2) {
+                db.play = db.play.filter((item)=> item.id !== roomid)
+            }
+            
+            
+            delete db.users[socket.id];
         }
 
 
-        delete db.users[socket.id];
-
-
-        console.log('disconnected', socket.id)
     }
 };

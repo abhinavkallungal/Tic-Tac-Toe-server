@@ -14,10 +14,10 @@ export default{
 
         socket.on('JoinToGame',(roomid:string)=>controller.JoinToGame(roomid,socket))
 
-        socket.on('play',(data:{position:number,roomid:string})=>controller.play(socket,data.position,data.roomid))
+        socket.on('play',(data:any)=>controller.play(socket,data.position,data.roomid))
 
         socket.on("spectat", (roomid:string) =>controller.spectat(socket,roomid))
-        
+
         socket.on("disconnect", () =>controller.disconnect(socket))
 
     }
